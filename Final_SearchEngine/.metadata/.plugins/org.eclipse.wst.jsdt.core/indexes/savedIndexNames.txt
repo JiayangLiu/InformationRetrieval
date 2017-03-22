@@ -1,0 +1,10 @@
+INDEX VERSION 1.3+/Users/macdowell/Desktop/Professional Materials/3_Junior S1/7_Information_Retrieval/Lab/Final_SearchEngine/.metadata/.plugins/org.eclipse.wst.jsdt.core/indexes
+2574416848.index
+668956402.index
+1933860032.index
+1901646859.index
+3858063032.index
+3363358072.index
+1099432637.index
+579717702.index
+1301773196.index

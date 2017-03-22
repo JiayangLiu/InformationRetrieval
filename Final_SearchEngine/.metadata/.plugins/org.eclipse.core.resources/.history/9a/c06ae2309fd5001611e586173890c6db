@@ -1,0 +1,112 @@
+package liu.searchengine.servlet;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.omg.CORBA.PRIVATE_MEMBER;
+
+import liu.searchengine.dao.IJokeDAO;
+import liu.searchengine.dao.impl.JokeDAOImpl;
+import liu.searchengine.dbutil.DBManager;
+import liu.searchengine.factory.DAOFactory;
+import liu.searchengine.lucene.IndexManager;
+import liu.searchengine.lucene.JokeSearcher;
+import liu.searchengine.vo.Joke;
+
+public class SearchServlet extends HttpServlet {
+	public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		boolean indexCreated = false; // 是没有用的
+
+		req.setCharacterEncoding("utf-8");
+		resp.setContentType("text/html;charset=utf-8");
+
+		String path = "search.jsp";
+		String searchtext = req.getParameter("search"); // 接收search的内容
+		System.out.println("Servlet: " + searchtext);
+
+		List<String> result = new ArrayList<String>(); // 保存所有返回信息
+		if (searchtext == null || "".equals(searchtext)) {
+			result.add("查询内容不能为空!");
+		}
+		List<String> result_href = new ArrayList<String>(); // 保存所有返回信息
+		if (searchtext == null || "".equals(searchtext)) {
+			result_href.add("#");
+		}
+		List<String> result_favor = new ArrayList<String>(); // 保存所有返回信息
+		if (searchtext == null || "".equals(searchtext)) {
+			result_favor.add("0");
+		}
+		List<String> result_comment = new ArrayList<String>(); // 保存所有返回信息
+		if (searchtext == null || "".equals(searchtext)) {
+			result_comment.add("0");
+		}
+		
+		// 创建索引
+		String INDEX_PATH = SearchServlet.class.getProtectionDomain().getCodeSource().getLocation().getFile()
+				+ File.separator + "index";
+		DBManager dbm = new DBManager();
+		JokeDAOImpl daoimpl = new JokeDAOImpl(dbm.getConnection());
+		if (!indexCreated) {
+			try {
+				DAOFactory.getIJokeInstance().getAllJoke();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			try {
+				new IndexManager(INDEX_PATH).createIndex(JokeDAOImpl.getAll());
+			} catch (Throwable e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			indexCreated = true;
+		}
+
+		// 执行Lucene查询
+		JokeSearcher searcher = new JokeSearcher(INDEX_PATH, JokeSearcher.DEFAULT_HIGHLIGHT_STYLE_pre,
+				JokeSearcher.DEFAULT_HIGHLIGHT_STYLE_post);
+		searcher.setDAOImpl(daoimpl);
+		List<Joke> joke_list = searcher.getNewsByKeyWordsInHightLight(searchtext);
+		for (Joke n : joke_list) {
+			result.add(n.getContent());
+			result_href.add(n.getUrl());
+			result_favor.add(n.getFavor());
+			result_comment.add(n.getComment());
+		}
+		if (result.size() == 0) {
+			result.add("搜索内容尚未有笑话对应");
+			result_href.add("#");
+			result_favor.add("0");
+			result_comment.add("0");
+		}
+		req.setAttribute("result", result); // 保存信息
+		req.setAttribute("result_href", result_href);
+		req.setAttribute("result_favor", result_favor);
+		req.setAttribute("result_comment", result_comment);
+		
+		// 删除索引 解决indexwrite锁问题 以及 索引多重出现问题
+		File file = new File(INDEX_PATH);  
+	    // 判断目录或文件是否存在  
+	    if (!file.exists()) {  // 不存在返回 false  
+	        System.out.println("删除原索引失败");;  
+	    } else {  
+	        // 判断是否为文件  
+	        if (file.isFile())  // 为文件时调用删除文件方法  
+	        	file.delete();  
+	    }
+		
+		req.getRequestDispatcher(path).forward(req, resp); // 跳转
+	}
+
+	public void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		this.doGet(req, resp);
+	}
+
+	// 通过method=“get”传过来的数据，会在请求的URL里面显示; method=“post”的时候，数据不会显示在请求的URL里面显示
+}

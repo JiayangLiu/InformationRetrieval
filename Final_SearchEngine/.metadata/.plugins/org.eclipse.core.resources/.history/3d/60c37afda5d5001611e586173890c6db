@@ -1,0 +1,103 @@
+package liu.searchengine.lucene;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.standard.std31.StandardTokenizerImpl31;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.util.Version;
+
+import com.chenlb.mmseg4j.analysis.MMSegAnalyzer;
+
+import liu.searchengine.vo.Joke;
+
+public class IndexManager {
+	public static final Version CURRENT_VERSION = Version.LUCENE_35;
+	private IndexWriter indexWriter;
+	private IndexWriterConfig conf;
+	private Analyzer defaultAnalyzer;
+	private Directory indexDirectory;
+
+	public IndexManager(String indexPath) throws CorruptIndexException, LockObtainFailedException, IOException {
+		super();
+		indexDirectory = FSDirectory.open(new File(indexPath));
+		defaultAnalyzer = new MMSegAnalyzer();	// StandardAnalyzer(CURRENT_VERSION);
+		this.conf = new IndexWriterConfig(CURRENT_VERSION, defaultAnalyzer);
+		conf.setOpenMode(OpenMode.CREATE);
+
+		// 以下方法测试不通
+		// 重点: 对IndexWriter的lock进行处理，以使多次搜索
+		// if (IndexWriter.isLocked(indexDirectory)) {
+		// IndexWriter.unlock(indexDirectory);
+		// }
+		indexWriter = new IndexWriter(indexDirectory, conf);
+		System.out.println("新IndexWriter创建成功");
+	}
+
+	// 对JavaBean索引
+	public synchronized void createIndex(List<Joke> joke_list) throws Throwable {
+		Field idField, contentField, urlField, authorField, favorField, commentField;
+		Joke n = null;
+		Document doc;
+		// System.out.println("createIndex被调用了");
+		for (int i = 0; i < joke_list.size(); i++) {
+			n = joke_list.get(i);
+			idField = new Field("id", n.getId() + "", Store.YES, Index.NOT_ANALYZED_NO_NORMS);
+			idField.setBoost(0.0001F);
+			String atr = null;
+			atr = n.getContent();
+			contentField = new Field("content", atr, Store.YES, Index.ANALYZED);
+			urlField = new Field("url", n.getUrl(), Store.YES, Index.NOT_ANALYZED);
+			authorField = new Field("author", n.getAuthor(), Store.YES, Index.NOT_ANALYZED);
+			favorField = new Field("favor", n.getFavor(), Store.YES, Index.NOT_ANALYZED);
+			commentField = new Field("comment", n.getComment(), Store.YES, Index.NOT_ANALYZED);
+
+			doc = new Document();
+			doc.add(idField);
+			doc.add(contentField);
+			doc.add(urlField);
+			doc.add(authorField);
+			doc.add(favorField);
+			doc.add(commentField);
+			try {
+				indexWriter.addDocument(doc);
+			} catch (CorruptIndexException e) {
+				try {
+					IndexWriter.unlock(indexDirectory);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		try {
+			indexWriter.commit();
+			indexWriter.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			finalize();
+		}
+	}
+
+	@Override
+	protected void finalize() throws Throwable {
+		indexWriter.close();
+		super.finalize();
+	}
+}

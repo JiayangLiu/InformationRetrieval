@@ -1,0 +1,2 @@
+Hello		:	[Hello.lrc, 1]   
+Remedy		:	[Hello.lrc, 1]   [Remedy.lrc, 1]   

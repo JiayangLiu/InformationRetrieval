@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy 2 elements to &apos;Final_SearchEngine/lib&apos;&#x0A;- Original project: &apos;test_lucene&apos;&#x0A;- Destination element: &apos;Final_SearchEngine/lib&apos;&#x0A;- Original elements:&#x0A;     junit-4.7.jar&#x0A;     lucene-analyzers-3.5.0.jar" description="Copy files" destination="=Final_SearchEngine/lib" element1="lib/junit-4.7.jar" element2="lib/lucene-analyzers-3.5.0.jar" files="2" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1481561490538" units="0" version="1.0"/>
+</session>

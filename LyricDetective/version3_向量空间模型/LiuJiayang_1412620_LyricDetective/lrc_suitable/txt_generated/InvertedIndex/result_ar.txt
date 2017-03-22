@@ -1,0 +1,3 @@
+Ade		:	[Hello.lrc, 1]   [Remedy.lrc, 1]   
+Adele		:	[Hello.lrc, 1]   
+ar:		:	[Hello.lrc, 1]   [Remedy.lrc, 1]   
